@@ -545,3 +545,291 @@ taskIdx = 排序后数组的"进度指针"
          告诉我"已经有多少个任务检查过了"
          避免重复检查已经加入堆的任务
 ```
+
+## 力扣版本
+给你一个二维数组 tasks ，用于表示 n​​​​​​ 项从 0 到 n - 1 编号的任务。其中 tasks[i] = [enqueueTimei, processingTimei] 意味着第 i​​​​​​​​​​ 项任务将会于 enqueueTimei 时进入任务队列，需要 processingTimei 的时长完成执行。
+
+现有一个单线程 CPU ，同一时间只能执行 最多一项 任务，该 CPU 将会按照下述方式运行：
+
+如果 CPU 空闲，且任务队列中没有需要执行的任务，则 CPU 保持空闲状态。
+如果 CPU 空闲，但任务队列中有需要执行的任务，则 CPU 将会选择 执行时间最短 的任务开始执行。如果多个任务具有同样的最短执行时间，则选择下标最小的任务开始执行。
+一旦某项任务开始执行，CPU 在 执行完整个任务 前都不会停止。
+CPU 可以在完成一项任务后，立即开始执行一项新任务。
+返回 CPU 处理任务的顺序。
+
+ 
+
+示例 1：
+
+输入：tasks = [[1,2],[2,4],[3,2],[4,1]]
+输出：[0,2,3,1]
+解释：事件按下述流程运行： 
+- time = 1 ，任务 0 进入任务队列，可执行任务项 = {0}
+- 同样在 time = 1 ，空闲状态的 CPU 开始执行任务 0 ，可执行任务项 = {}
+- time = 2 ，任务 1 进入任务队列，可执行任务项 = {1}
+- time = 3 ，任务 2 进入任务队列，可执行任务项 = {1, 2}
+- 同样在 time = 3 ，CPU 完成任务 0 并开始执行队列中用时最短的任务 2 ，可执行任务项 = {1}
+- time = 4 ，任务 3 进入任务队列，可执行任务项 = {1, 3}
+- time = 5 ，CPU 完成任务 2 并开始执行队列中用时最短的任务 3 ，可执行任务项 = {1}
+- time = 6 ，CPU 完成任务 3 并开始执行任务 1 ，可执行任务项 = {}
+- time = 10 ，CPU 完成任务 1 并进入空闲状态
+示例 2：
+
+输入：tasks = [[7,10],[7,12],[7,5],[7,4],[7,2]]
+输出：[4,3,2,0,1]
+解释：事件按下述流程运行： 
+- time = 7 ，所有任务同时进入任务队列，可执行任务项  = {0,1,2,3,4}
+- 同样在 time = 7 ，空闲状态的 CPU 开始执行任务 4 ，可执行任务项 = {0,1,2,3}
+- time = 9 ，CPU 完成任务 4 并开始执行任务 3 ，可执行任务项 = {0,1,2}
+- time = 13 ，CPU 完成任务 3 并开始执行任务 2 ，可执行任务项 = {0,1}
+- time = 18 ，CPU 完成任务 2 并开始执行任务 0 ，可执行任务项 = {1}
+- time = 28 ，CPU 完成任务 0 并开始执行任务 1 ，可执行任务项 = {}
+- time = 40 ，CPU 完成任务 1 并进入空闲状态
+ 
+
+提示：
+
+tasks.length == n
+1 <= n <= 105
+1 <= enqueueTimei, processingTimei <= 109
+
+```cpp
+class Solution {
+public:
+    vector<int> getOrder(vector<vector<int>>& tasks) {
+        int n = (int)tasks.size();
+        vector<tuple<long long, long long, int>> tsk(n);
+        
+        for(int i = 0; i < n; i++){
+            // ✅ 修正1：tasks[i][0] 取 enqueueTime，tasks[i][1] 取 processingTime
+            tsk[i] = {tasks[i][0], tasks[i][1], i};
+        }
+
+        sort(tsk.begin(), tsk.end());
+
+        priority_queue<
+            pair<long long, int>,
+            vector<pair<long long, int>>,
+            greater<pair<long long, int>>
+        > pq;
+
+        vector<int> result;
+        long long currentTime = 0;
+        int taskIdx = 0;
+
+        while((int)result.size() < n){
+            // ✅ 修正2：tsk[taskIdx] 用中括号访问
+            while(taskIdx < n && get<0>(tsk[taskIdx]) <= currentTime){
+                pq.push({get<1>(tsk[taskIdx]), get<2>(tsk[taskIdx])});
+                taskIdx++;
+            }
+
+            if(pq.empty()){
+                currentTime = get<0>(tsk[taskIdx]);
+            }
+            else{
+                auto [procTime, idx] = pq.top();
+                pq.pop();
+                result.push_back(idx);
+                currentTime += procTime;
+            }
+        }
+        
+        // ✅ 修正3：返回结果
+        return result;
+    }
+};
+```
+
+### 问题1：怎么看出来返回 result？
+
+看**函数签名**：
+
+```cpp
+// 题目要求：返回 CPU 处理任务的顺序
+//          ↓ 返回类型
+vector<int> getOrder(vector<vector<int>>& tasks)
+//          ↑ 题目说返回这个
+
+// 所以函数末尾必须有 return result;
+```
+
+**就像看一个人有没有穿衣服，看函数签名就知道它"应该"返回什么。**
+
+---
+
+### 问题2：这道题有几种做法？
+
+| 做法 | 思路 | 时间复杂度 | 代码复杂度 |
+|------|------|-----------|-----------|
+| **做法1：先排序**（你现在用的） | 按入队时间排序 + 最小堆 | O(n log n) | 中等 |
+| 做法2：不排序 | 每次循环遍历找下一个该执行的任务 | O(n²) 会超时 ❌ |
+| 做法3：多路归并 | 把多个有序列表合并成一个 | O(n log n) | 复杂 |
+
+**你的做法就是标准解法，不生硬，反而是最优雅的！**
+
+---
+
+### 问题3：更优雅的写法
+
+用**结构体**代替 `tuple`，代码更可读：
+
+```cpp
+struct Task {
+    long long enqueue;
+    long long process;
+    int idx;
+};
+
+class Solution {
+public:
+    vector<int> getOrder(vector<vector<int>>& tasks) {
+        int n = tasks.size();
+        vector<Task> tsk(n);
+        
+        for(int i = 0; i < n; i++) {
+            tsk[i] = {tasks[i][0], tasks[i][1], i};
+        }
+        
+        sort(tsk.begin(), tsk.end(), 
+             [](const Task& a, const Task& b) {
+                 if(a.enqueue != b.enqueue) return a.enqueue < b.enqueue;
+                 if(a.process != b.process) return a.process < b.process;
+                 return a.idx < b.idx;
+             });
+        
+        // 使用小顶堆：process 小的在前，process 相同则 idx 小的在前
+        priority_queue<
+            pair<long long, int>,           // (processTime, idx)
+            vector<pair<long long, int>>,
+            greater<pair<long long, int>>
+        > pq;
+        
+        vector<int> result;
+        long long time = 0;
+        int i = 0;  // ← 这就是 taskIdx，改个名字更直观
+        
+        while(result.size() < n) {
+            // 把所有入队时间 ≤ 当前时间的任务放入堆
+            while(i < n && tsk[i].enqueue <= time) {
+                pq.push({tsk[i].process, tsk[i].idx});
+                i++;
+            }
+            
+            if(pq.empty()) {
+                time = tsk[i].enqueue;  // 跳到下一个任务的入队时间
+            } else {
+                auto [process, idx] = pq.top();
+                pq.pop();
+                result.push_back(idx);
+                time += process;
+            }
+        }
+        
+        return result;
+    }
+};
+```
+
+**更优雅在哪里？**
+```cpp
+// 用 tuple 时
+get<0>(tsk[i])    // ← 不知道0是什么， 得回去看定义
+
+// 用结构体时
+tsk[i].enqueue    // ← 一眼就知道是什么
+```
+
+---
+
+### 问题4：taskIdx（也就是代码里的 `i`）到底怎么回事？
+
+#### 用生活场景类比
+
+```
+想象你在排队做核酸：
+
+┌────────────────────────────────────────────────────────────┐
+│                    核酸检测队列                              │
+├────────────────────────────────────────────────────────────┤
+│  排队的原始顺序（按到达时间排序后）                           │
+│                                                            │
+│   位置0: 张三  (到达时间1, 预计2分钟)                        │
+│   位置1: 李四  (到达时间2, 预计4分钟)                        │
+│   位置2: 王五  (到达时间3, 预计2分钟)                        │
+│   位置3: 赵六  (到达时间4, 预计1分钟)                        │
+│                                                            │
+│         ↑                                                   │
+│         │                                                   │
+│    这个 i（taskIdx）就是你的"扫描指针"                       │
+│    告诉你：已经检查到谁了                                    │
+│    下一个该检查的是位置3的人                                 │
+└────────────────────────────────────────────────────────────┘
+```
+
+#### 动态演示
+
+```
+初始状态：
+  i = 0, 当前时间 = 0
+  队列：{张三(1), 李四(2), 王五(3), 赵六(4)}
+  
+  问：i=0位置的人到了吗？到达时间1 > 当前时间0 ❌
+  → 不能加入优先队列
+  → 优先队列为空 → 跳到第0个人的到达时间 currentTime = 1
+
+
+第一轮后：
+  i = 0, 当前时间 = 1
+  队列：{张三(1), 李四(2), 王五(3), 赵六(4)}
+  
+  问：i=0位置的人到了吗？到达时间1 ≤ 当前时间1 ✓
+  → 张三加入优先队列
+  → i++ → i = 1
+  
+  继续问：i=1位置的人到了吗？到达时间2 > 当前时间1 ❌
+  → 停止扫描
+  → 从优先队列选一个处理（张三）
+
+
+第二轮后：
+  i = 1, 当前时间 = 1+2=3
+  队列：{李四(2), 王五(3), 赵六(4)}
+  优先队列：{李四(4分钟)}
+  
+  问：i=1位置的人到了吗？到达时间2 ≤ 当前时间3 ✓
+  → 李四加入优先队列
+  → i = 2
+  
+  继续问：i=2位置的人到了吗？到达时间3 ≤ 当前时间3 ✓
+  → 王五加入优先队列
+  → i = 3
+  
+  继续问：i=3位置的人到了吗？到达时间4 > 当前时间3 ❌
+  → 停止扫描
+  → 从优先队列选一个处理（王五，因为只有2分钟，比李四快）
+
+
+以此类推...
+```
+
+```
+i 就是「已经扫描到哪了」的标记
+
+它的值只会增加，不会减少
+它帮我们「记住」哪些任务已经检查过了
+防止重复把同一个任务加入优先队列
+```
+
+---
+
+### 完整对比图
+
+| 变量名 | 含义 | 变化方式 |
+|--------|------|---------|
+| `taskIdx` / `i` | 扫描指针，指向下一个要检查的排序后位置 | 从0→n，每次+1 |
+| `result.size()` | 已经完成了多少个任务 | 从0→n |
+| `currentTime` | 当前时间 | 随任务执行而增加 |
+| `pq.size()` | 待执行队列中有多少个任务 | 动态增减 |
+
+**它们各自独立工作，互不干扰。**

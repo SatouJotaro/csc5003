@@ -81,7 +81,9 @@ K: 列表的数量
 由于 `std::priority_queue` 默认是最大堆，但我们的算法需要快速找到**最小值**（所以需要最小堆），所以我们需要通过修改它的**比较规则**来实现。
 
 `priority_queue` 的完整模板签名是：
-$$\text{std::priority\_queue<Type, Container, Compare>}$$
+```cpp
+priority_queue<Type, Container, Compare>
+```
 
 *   `Type`：存储的元素类型（我们用 `Node`）。
 *   `Container`：底层存储容器（默认是 `std::vector<Type>`）。
@@ -141,7 +143,64 @@ priority_queue<Node, vector<Node>, std::greater<Node>> min_heap;
 
 这是函数参数传递的优化。
 
-1.  `const`：保证比较函数不会意外修改传入的 $a$ 或 $b$。
+1.  `const`：保证比较函数不会意外修改传入的 a 或 b。
 2.  `&` (引用)：避免了复制整个 `Node` 对象，提高了效率。
 
-理解了堆的本质是“基于数组的树形结构，用于快速获取极值”，并且理解了 $\text{priority\_queue}$ 的模板参数如何控制它是最大堆还是最小堆，您对这个算法的理解就到位了！
+理解了堆的本质是“基于数组的树形结构，用于快速获取极值”，并且理解了 priority_queue 的模板参数如何控制它是最大堆还是最小堆，您对这个算法的理解就到位了！
+
+## 力扣链表版本
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+
+struct CompareNode{
+    bool operator()(const ListNode* a, const ListNode* b) const{
+        return a->val > b->val;
+    }
+};
+
+class Solution {
+public:
+    ListNode* mergeKLists(vector<ListNode*>& lists) {
+        priority_queue<ListNode*, vector<ListNode*>, CompareNode> min_heap;
+
+        for(ListNode* list_head : lists){
+            if(list_head != nullptr){
+                min_heap.push(list_head);
+            }
+        }
+        
+        // 2. 创建一个哑节点和当前指针，用于构建新链表
+        ListNode dummy;
+        ListNode* tail = &dummy; // tail 指向新链表的末尾
+        
+        // 3. 循环合并
+        while (!min_heap.empty()) {
+            // a. 取出堆顶的最小节点 (O(log K))
+            ListNode* min_node = min_heap.top();
+            min_heap.pop();
+            
+            // b. 将其接到结果链表末尾
+            tail->next = min_node;
+            tail = tail->next; // 移动 tail 指针
+            
+            // c. 关键：如果该节点所在的列表还有下一个元素，将其压入堆中 (O(log K))
+            if (min_node->next != nullptr) {
+                min_heap.push(min_node->next);
+            }
+        }
+        
+        // 返回新链表的真正头节点（跳过 dummy 节点）
+        return dummy.next;
+    }
+};
+```

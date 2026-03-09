@@ -1,0 +1,122 @@
+# 题目解析
+
+## 📌 输入输出说明
+
+| 项目 | 内容 |
+|------|------|
+| **输入** | 第一行T（测试用例数），每个测试用例含stamp和target两个字符串 |
+| **输出** | 每个测试用例输出 YES 或 NO |
+
+**操作说明**：初始字符串`s`全为`?`，每次选位置`i`，把stamp覆盖到`s[i..i+|stamp|-1]`，最多操作`10×|target|`次，问能否得到target。
+
+---
+
+## 🔑 知识点
+
+**贪心 + 逆向模拟（Reverse Simulation）**
+
+---
+
+## 💡 解题思路（逆向思维）
+
+正向模拟（从全`?`变成target）很难，但**倒着想**就简单了：
+
+> 把target逐步"反印"回全`?`
+
+**关键观察**：最后一次盖章的位置，在target中一定完全匹配stamp（因为后面没有操作覆盖它）。倒数第二次的盖章，可能有部分字符被后来的章覆盖（变成了`?`），但剩余字符仍匹配stamp。
+
+**逆向算法**：
+1. 从target出发，反复寻找某个位置`i`，使得stamp能在此"反印"（stamp字符与target字符匹配，`?`可匹配任意字符）
+2. 找到后，把那段字符全部改成`?`（抹去这次盖章）
+3. 重复直到无法继续
+4. 最终如果全是`?`，输出 YES，否则 NO
+
+### 图解示例
+
+```
+stamp="abc", target="ababc"
+
+初始:   a b a b c
+第1趟: 找到i=2, "abc"完全匹配 → a b ? ? ?
+第2趟: 找到i=0, "ab?"中ab匹配,?忽略 → ? ? ? ? ?
+全是? → YES
+```
+
+---
+
+## ✅ C++ 完整代码
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    
+    int T;
+    cin >> T;
+    
+    while (T--) {
+        string stamp, target;
+        cin >> stamp >> target;
+        
+        int n = (int)target.size();
+        int m = (int)stamp.size();
+        string t = target;  // 工作字符串，逐步变成???...?
+        
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (int i = 0; i <= n - m; i++) {
+                bool valid   = true;   // stamp能否在位置i反印
+                bool hasNonQ = false;  // 至少有一个非?字符（保证有进展）
+                
+                for (int j = 0; j < m; j++) {
+                    if (t[i+j] == '?') continue;          // ?可以忽略
+                    if (t[i+j] != stamp[j]) {             // 字符不匹配
+                        valid = false; break;
+                    }
+                    hasNonQ = true;  // 找到至少一个实际匹配
+                }
+                
+                if (valid && hasNonQ) {
+                    // 反印：把这段全变成?
+                    for (int j = 0; j < m; j++) t[i+j] = '?';
+                    changed = true;
+                }
+            }
+        }
+        
+        // 检查是否全变成?
+        bool allQ = (t == string(n, '?'));
+        cout << (allQ ? "YES" : "NO") << "\n";
+    }
+    
+    return 0;
+}
+```
+
+---
+
+## 🔍 验证样例
+
+```
+stamp="abc", target="ababc"
+t="ababc" → i=2匹配"abc" → t="ab???"
+t="ab???" → i=0匹配"ab?" → t="?????"
+全是? → YES ✓
+
+stamp="ab", target="ba"
+t="ba" → i=0:"ba"中'b'≠'a' → 无匹配
+t="ba" 非全? → NO ✓
+```
+
+---
+
+## ⏱ 复杂度
+
+| 项目 | 复杂度 |
+|------|--------|
+| 时间 | O(n² × m)，n,m≤1000 完全可过 |
+| 空间 | O(n) |

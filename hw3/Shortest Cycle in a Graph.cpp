@@ -1,70 +1,56 @@
 #include<iostream>
 #include<vector>
+#include<algorithm>
 #include<queue>
-#include<climits>
+
 using namespace std;
+
+const int INF = 1e9;
 
 int main(){
     int n, m;
-    cin >> n >> m;
+    cin >> n >> m; // n 是顶点数量，m 是边数量
 
-    // 创建邻接表：adj[u]存储u的所有邻居
     vector<vector<int>> adj(n);
-    for(int i = 0; i < m; i++){
+    for(int i = 0; i < m; ++i){
         int u, v;
         cin >> u >> v;
-        // 无向图：u可以到v，v也可以到u
         adj[u].push_back(v);
         adj[v].push_back(u);
     }
 
-    const int INF = INT_MAX;
-    int answer = INF;
+    int min_cycle = INF;
 
-    vector<bool> visited(n, false); // 节点是否已访问
-    vector<int> depth(n, 0);        // BFS深度（到起点的距离）
-    vector<int> parent(n, -1);      // BFS中的父节点
+    vector<int> dist(n);
+    vector<int> parent(n);
 
-    // 遍历每个顶点作为BFS起点
-    for(int start = 0; start < n; start++){
-        // 如果已经访问过，跳过（避免重复计算）
-        if(visited[start]) continue;
+    for(int i = 0; i < n; i++){
+        fill(dist.begin(), dist.end(), -1);
+        fill(parent.begin(), parent.end(), -1);
 
-        // 初始化BFS
         queue<int> q;
-        q.push(start);
-        visited[start] = true;
-        depth[start] = 0;
-        parent[start] = -1;
+        dist[i] = 0;
+        q.push(i);
 
-        // BFS遍历
         while(!q.empty()){
-            int u = q.front();
-            q.pop();
+            int u = q.front(); q.pop();
 
-            // 遍历u的所有邻居
             for(int v : adj[u]){
-                if(!visited[v]){
-                    // v未访问：继续BFS
-                    visited[v] = true;
-                    depth[v] = depth[u] + 1;
+                // 情况1：v 未被访问，正常入队
+                if(dist[v] == -1){
+                    dist[v] = dist[u] + 1;
                     parent[v] = u;
                     q.push(v);
-                }
+                } 
+                // 情况2：v 已访问且不是父节点，发现环
                 else if(v != parent[u]){
-                    // v已访问，且v不是u的父节点 → 发现环！
-                    // 计算环的长度
-                    int cycle_len = depth[u] + depth[v] + 1;
-                    answer = min(answer, cycle_len);
+                    min_cycle = min(min_cycle, dist[u] + dist[v] + 1);
                 }
             }
         }
     }
 
-    if(answer == INF){
-        cout << -1 << endl;
-    } else {
-        cout << answer << endl;
-    }
+    if(min_cycle == INF) cout << -1 << endl;
+    else cout << min_cycle << endl;
     return 0;
 }

@@ -1,4 +1,4 @@
-这道题是经典的**“外星人字典”（Alien Dictionary）**问题，它是图论中**拓扑排序（Topological Sort）**的变种。
+这道题是经典的 **“外星人字典”（Alien Dictionary）** 问题，它是图论中 **拓扑排序（Topological Sort）** 的变种。
 
 下面我将分维度为你详细讲解。
 

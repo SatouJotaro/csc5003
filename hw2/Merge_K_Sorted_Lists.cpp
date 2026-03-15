@@ -1,120 +1,49 @@
-#include<iostream>
-#include<vector>
-#include<queue>
-#include<algorithm>
-
+#include<bits/stdc++.h>
 using namespace std;
 
-// 定义节点结构体
-struct Node
-{
-    int value; // 当前元素的值
-    int list_idx; // 元素来自哪个列表（0 ~ k - 1）
-    int element_idx; // 元素在列表中的索引（为了找下一个元素）
-
-    // 重载 < 运算符 (必须是为了让 std::priority_queue 知道如何比较)
-    // 默认的 priority_queue 是 Max Heap。
-    // 为了实现 Min Heap，我们需要让 A < B 意味着 B 优先级更高（值更大）。
-    // 但对于 Min Heap，我们希望值小（A < B）的优先级更高。
-    // 因此，我们定义：如果 A.value > B.value，则 A 具有较低的优先级（即 A < B 为 false）。
-    // 更直观的做法是：我们直接定义 > 运算符或者使用 greater<> 模板参数。
-    
-    // 采用更标准的 C++ 做法：使用 std::greater<>
-    // 这里我们不重载 <，而是直接在声明时使用 greater。
-};
-
-// 定义比较结构体，用于构建最小堆（如果不用 std::greater，则需要这个来强制定义 Min-Heap）
-struct CompareNode
-{
-    // 重载 operator()，使得这个结构体可以像函数一样被调用
-    bool operator()(const Node& a, const Node& b){ 
-        // 返回 true 表示 a 的优先级低于 b (a 应该被排在 b 后面)
-        // 对于 Min Heap (最小堆)：我们希望值小的元素优先级高。
-        // 所以，如果 a 的值大于 b 的值 (a.value > b.value)，则 a 优先级低，返回 true。
-        return a.value > b.value;
-    }
-};
-
-void solve(){
-    int k;
-    if(!(cin >> k)) return; // 如果 cin 失败（例如，文件结束符 EOF），则直接退出函数
-    if(k == 0){
-        cout << 0 << endl;
-        return;
-    }
-
-    // 存储 K 个输入列表
-    vector<vector<int>> lists(k);
-    int total_elements = 0;
-    // 读取输入
-    for(int i = 0; i < k; ++i){
-        int len;
-        cin >> len;
-        lists[i].resize(len);
-        total_elements += len;
-        for(int j = 0; j < len; ++j){
-            cin >> lists[i][j];
-        }
-    }
-    if(total_elements == 0){
-        cout << 0 << endl;
-        return;
-    }
-
-    // 初始化最小堆
-    // 声明一个最小堆：存储 Node，使用 CompareNode (基于值进行比较)
-    // 模板参数: <Node 类型, 存储容器, 比较器> 
-    priority_queue<Node, vector<Node>, CompareNode> min_heap;
-
-    // 将每个列表的第一个元素加入堆中
-    for(int i = 0; i < k; ++i){
-        if(!lists[i].empty()){
-            min_heap.push({
-                lists[i][0], // value
-                i,           // list_idx
-                0            // element_idx
-            });
-        }
-    }
-
-    // 迭代合并
-    vector<int> result;
-    result.reserve(total_elements); // 预分配空间，提高效率
-
-    while(!min_heap.empty()){
-        // 取出全局最小值
-        Node current = min_heap.top();
-        min_heap.pop();
-
-        result.push_back(current.value); // 记录结果
-
-        // 检查并加入该列表的下一个元素
-        int next_element_idx = current.element_idx + 1;
-        int current_list_idx = current.list_idx;
-
-        if(next_element_idx < (int)lists[current_list_idx].size()){
-            // if 还有下一个元素，加入堆
-            min_heap.push({
-                lists[current_list_idx][next_element_idx],
-                current_list_idx,
-                next_element_idx
-            }); 
-        }
-    }
-
-    // 输出结果
-    cout << result.size() << endl;
-    if(result.size() > 0){
-        for(size_t i = 0; i < result.size(); ++i){
-            cout << result[i] << (i == result.size() - 1 ? "" : " ");
-        }
-        cout << endl;
-    }
-}
-
 int main(){
-    std::ios_base::sync_with_stdio(false);
-    std::cin.tie(NULL);
-    solve();
+    int m; cin >> m;
+    // vector 模板只接受一个参数（表示存储的类型）。
+    // 你想要存储一组区间，应该使用 vector<pair<int, int>>
+    vector<pair<int, int>> interval; 
+    for(int i = 0; i < m; i++){
+        int start, end;
+        // 你不能将 push_back 的结果作为 cin 的操作对象。
+        // 正确的做法应当是先用变量读取 start 和 end，然后再将它们存入 vector。
+        cin >> start >> end;
+        interval.push_back({start, end});
+    }
+
+    sort(interval.begin(), interval.end());
+
+    vector<pair<int, int>> result;
+    // 1. 把第一个区间放进去作为起始
+    result.push_back(interval[0]); 
+    // 后果：越界访问（Segmentation Fault） 
+        // 在你的循环中：result[i].second。当 i=0 时，result 是空的，没有任何元素。
+        // 你试图访问 result[0]，这相当于访问了一块未分配的内存，程序会直接报错/崩溃。
+    // 逻辑空缺：合并区间的核心思想是保留一个“当前的合并序列末尾”，你需要一个初始元素作为比较基准。
+        // 如果没有这一步，循环内部的逻辑就失去了参照物。
+    
+    for(int i = 1; i < m; i++){ // 第一个区间已经放了 就要从第二个开始遍历
+        // 你应该始终使用 result.back() 来获取刚才放入 result 的那个区间（即当前最新的合并后区间）。
+        // 你要比较的目标是 interval[i] (当前正在遍历的) 和 result.back() (已经合并好的最后一个)。
+        // 你在循环体内却同时混用了 i 和 i+1，这在逻辑上会跳过数据，导致合并漏掉很多项。
+
+        if(interval[i].first <= result.back().second){
+            result.back().second = max(result.back().second, interval[i].second);
+        }
+        else{
+            result.push_back(interval[i]);
+        }
+    }
+
+    // 不加 endl 的后果：输出格式错误。评测机通常是根据“字符流”来对比答案的，多一个空格、少一个换行，或者把两个数字粘在一起，都会导致题目判错。
+    cout << result.size() << endl;
+    for(int i = 0; i < result.size(); i++){
+        // 题目要求输出 start 和 end 中间用空格隔开，你现在的写法会把它们连在一起，比如 1 5 会输出 15。
+        cout << result[i].first << " " << result[i].second << endl;
+    }
+    
     return 0;
 }

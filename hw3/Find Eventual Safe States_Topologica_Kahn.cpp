@@ -8,59 +8,51 @@
     // 如果某邻居入度变为 0，则加入队列。
 // 结论：最终被处理过的所有节点即为安全节点。因为在反转图中，无法到达任何节点的本质就是不参与环的逻辑。
 
-#include<iostream>
-#include<vector>
-#include<queue>
-#include<algorithm>
+#include<bits/stdc++.h>
 
 using namespace std;
 
 int main(){
-    int n;
-    if(!(cin >> n)) return 0;
+    int n; cin >> n;
+    vector<vector<int>> rev_graph(n);
+    vector<int> outdegree(n);
 
-    vector<vector<int>> rev_graph(n);   // 反向图
-    vector<int> out_degree(n, 0);       // 原图的出度
-    vector<int> in_degree(n, 0);        // 反向图的入度
-
-    for(int i = 0; i < n; ++i){
-        int d;
-        cin >> d;
-        out_degree[i] = d;
-        for(int j = 0; j < d; ++j){
-            int v;
-            cin >> v;
-            rev_graph[v].push_back(i);  // 边反向
-            in_degree[i]++;             // 对应反向图的入度增加
+    for(int u = 0; u < n; u++){
+        int d; cin >> d;
+        outdegree[u] = d;
+        for(int i = 0; i < d; i++){
+            int v; cin >> v;
+            rev_graph[v].push_back(u);
         }
     }
 
     queue<int> q;
-    for(int i = 0; i < n; ++i){
-        if(out_degree[i] == 0) q.push(i); // 将原图中所有终端节点入队
+    for(int i = 0; i < n; i++){
+        if(outdegree[i] == 0){
+            q.push(i);
+        }
     }
 
-    vector<int> safe_nodes;
+    vector<int> safe_node;
     while(!q.empty()){
-        int v = q.front();
-        q.pop();
-        safe_nodes.push_back(v);
+        int node = q.front(); q.pop();
+        safe_node.push_back(node);
 
-        for(int u : rev_graph[v]){
-            if(--in_degree[u] == 0){ // 它先将 in_degree[u] 减 1，然后再判断减完之后是否等于 0。
+        for(auto u : rev_graph[node]){
+            outdegree[u]--;
+            if(outdegree[u] == 0){
                 q.push(u);
+
             }
         }
     }
 
-    sort(safe_nodes.begin(), safe_nodes.end());
-    cout << safe_nodes.size() << endl;
-    for(int i = 0; i < safe_nodes.size(); ++i){
-        // 如果 i 是最后一个元素，就输出空字符串（即什么都不加）
-        // 否则输出一个空格
-        cout << safe_nodes[i] << ( i == safe_nodes.size() - 1 ? "" : " ");
+    sort(safe_node.begin(), safe_node.end());
+    cout << safe_node.size() << endl;
+    for(int i = 0; i < safe_node.size(); i++){
+        cout << safe_node[i] << " ";
     }
-    cout << endl; 
+    cout << endl;
     return 0;
 }
 

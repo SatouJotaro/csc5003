@@ -22,12 +22,10 @@ using namespace std;
 int main(){
     int n, m; cin >> n >> m;
 
-    string word1, word2;
-    // 注意：n或m为0时对应行为空，用cin直接读会跳过空行
-    // 所以用 getline 配合 ignore 处理
-    cin.ignore();
-    getline(cin, word1);
-    getline(cin, word2);
+    // n=0就不读，直接保持空字符串
+    string word1 = "", word2 = "";
+    if (n > 0) cin >> word1;
+    if (m > 0) cin >> word2;
 
     vector<vector<int>> dp(n+1, vector<int>(m+1, 0));
 
